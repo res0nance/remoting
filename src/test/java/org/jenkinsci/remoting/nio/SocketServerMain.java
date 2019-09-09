@@ -56,6 +56,7 @@ public class SocketServerMain {
         ss.register(nio.getSelector(), OP_ACCEPT);
         LOGGER.info("Waiting for connection");
         nio.run();
+        nio.close();
     }
 
     private static final Logger LOGGER = Logger.getLogger(SocketServerMain.class.getName());

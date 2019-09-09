@@ -19,8 +19,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.annotation.Nonnull;
-import static junit.framework.TestCase.assertFalse;
-import static junit.framework.TestCase.assertTrue;
 
 import org.jenkinsci.remoting.RoleChecker;
 import org.jvnet.hudson.test.Issue;

@@ -1,6 +1,5 @@
 package hudson.remoting.throughput;
 
-import hudson.remoting.Callable;
 import hudson.remoting.CallableBase;
 import hudson.remoting.Channel;
 import hudson.remoting.Future;

@@ -25,21 +25,22 @@ public class FlightRecorderInputStreamTest {
         baos.write(0xFF);  // corruption
         oos.writeObject("ghi");
 
-        FlightRecorderInputStream fis = new FlightRecorderInputStream(new ByteArrayInputStream(baos.toByteArray()));
-        ObjectInputStream ois = new ObjectInputStream(fis);
-        assertEquals("abc", ois.readObject());
-        fis.clear();
-        assertEquals("def", ois.readObject());
-        try {
-            ois.readObject();
-            fail("Expecting a corruption");
-        } catch (StreamCorruptedException e) {
-            DiagnosedStreamCorruptionException t = fis.analyzeCrash(e, "test");
-            t.printStackTrace();
-            assertNull(t.getDiagnoseFailure());
-            // back buffer shouldn't contain 'abc' since the stream was reset
-            assertTrue(Arrays.equals(new byte[]{TC_STRING,0,3,'d','e','f',-1}, t.getReadBack()));
-            assertTrue(Arrays.equals(new byte[]{TC_STRING,0,3,'g','h','i'},t.getReadAhead()));
+        try (FlightRecorderInputStream fis = new FlightRecorderInputStream(new ByteArrayInputStream(baos.toByteArray()));
+        ObjectInputStream ois = new ObjectInputStream(fis)) {
+            assertEquals("abc", ois.readObject());
+            fis.clear();
+            assertEquals("def", ois.readObject());
+            try {
+                ois.readObject();
+                fail("Expecting a corruption");
+            } catch (StreamCorruptedException e) {
+                DiagnosedStreamCorruptionException t = fis.analyzeCrash(e, "test");
+                t.printStackTrace();
+                assertNull(t.getDiagnoseFailure());
+                // back buffer shouldn't contain 'abc' since the stream was reset
+                assertTrue(Arrays.equals(new byte[]{TC_STRING,0,3,'d','e','f',-1}, t.getReadBack()));
+                assertTrue(Arrays.equals(new byte[]{TC_STRING,0,3,'g','h','i'},t.getReadAhead()));
+            }
         }
     }
 
@@ -49,23 +50,24 @@ public class FlightRecorderInputStreamTest {
         for (int i = 0; i < sz; i++) {
             stuff[i] = (byte) (i % /* arbitrary cycle, not a power of 2 */213);
         }
-        FlightRecorderInputStream fris = new FlightRecorderInputStream(new ByteArrayInputStream(stuff));
-        byte[] stuff2 = new byte[sz];
-        int pos = 0;
-        int chunk = 117;
-        while (pos < sz) {
-            int toread = Math.min(chunk, sz - pos);
-            assertEquals(toread, fris.read(stuff2, pos, toread));
-            pos += toread;
-            chunk *= 1.9; // just try various chunk sizes
+        try (FlightRecorderInputStream fris = new FlightRecorderInputStream(new ByteArrayInputStream(stuff))) {
+            byte[] stuff2 = new byte[sz];
+            int pos = 0;
+            int chunk = 117;
+            while (pos < sz) {
+                int toread = Math.min(chunk, sz - pos);
+                assertEquals(toread, fris.read(stuff2, pos, toread));
+                pos += toread;
+                chunk *= 1.9; // just try various chunk sizes
+            }
+            assertEquals(sz, pos);
+            assertTrue(Arrays.equals(stuff, stuff2));
+            byte[] rec = fris.getRecord();
+            assertEquals(FlightRecorderInputStream.BUFFER_SIZE, rec.length);
+            byte[] expected = new byte[FlightRecorderInputStream.BUFFER_SIZE];
+            System.arraycopy(stuff, stuff.length - expected.length, expected, 0, expected.length);
+            assertTrue(Arrays.equals(expected, rec));
         }
-        assertEquals(sz, pos);
-        assertTrue(Arrays.equals(stuff, stuff2));
-        byte[] rec = fris.getRecord();
-        assertEquals(FlightRecorderInputStream.BUFFER_SIZE, rec.length);
-        byte[] expected = new byte[FlightRecorderInputStream.BUFFER_SIZE];
-        System.arraycopy(stuff, stuff.length - expected.length, expected, 0, expected.length);
-        assertTrue(Arrays.equals(expected, rec));
     }
 
     private static final byte TC_STRING = 0x74;

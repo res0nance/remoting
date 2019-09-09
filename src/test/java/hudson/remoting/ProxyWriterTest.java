@@ -1,7 +1,6 @@
 package hudson.remoting;
 
 import junit.framework.Test;
-import org.junit.Assume;
 import org.jvnet.hudson.test.Bug;
 
 import java.io.ByteArrayOutputStream;
